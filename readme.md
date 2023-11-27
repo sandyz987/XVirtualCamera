@@ -10,7 +10,7 @@ A virtual camera module based on the Xposed framework suitable for Android 9.0 a
 [![Stars](https://img.shields.io/github/stars/sandyz987/XVirtualCamera?label=Stars)](https://github.com/sandyz987/XVirtualCamera)
 [![License](https://img.shields.io/github/license/sandyz987/XVirtualCamera?label=License)](https://choosealicense.com/licenses/gpl-3.0/)
 
-<img src="preview.gif" width="300px">
+<img src="preview.gif" width="300px"><img src="preview.png" width="300px">
 
 
 

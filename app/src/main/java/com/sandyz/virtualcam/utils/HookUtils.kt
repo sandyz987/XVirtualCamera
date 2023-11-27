@@ -3,6 +3,8 @@ package com.sandyz.virtualcam.utils
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -36,6 +38,7 @@ object HookUtils {
         }
         return activities
     }
+
     fun getTopActivity(): Activity? {
         val activities = getActivities()
         return if (activities.isEmpty()) {
@@ -44,6 +47,10 @@ object HookUtils {
             activities[0]
         }
     }
+
+    fun getView(): View? = getTopActivity()?.window?.decorView
+
+    fun getContentView(): ViewGroup? = getView()?.findViewById(android.R.id.content) as? ViewGroup
 
     fun init(lpparam: XC_LoadPackage.LoadPackageParam) {
         val instrumentation = XposedHelpers.findClass(

@@ -14,6 +14,7 @@ import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.view.children
 import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
@@ -81,6 +82,7 @@ class VirtualCameraBiliSmile : IHook {
             override fun beforeHookedMethod(param: MethodHookParam?) {
                 xLog("应用程序开始预览startPreview    topActivity:${HookUtils.getTopActivity()}")
                 startPreview()
+                dumpView(HookUtils.getContentView(), 0)
             }
         })
 
@@ -180,9 +182,8 @@ class VirtualCameraBiliSmile : IHook {
         if (virtualSurfaceView == null) {
             virtualSurfaceView = SurfaceView(HookUtils.getTopActivity())
             HookUtils.getTopActivity()?.runOnUiThread {
-                HookUtils.getTopActivity()?.findViewById<ViewGroup>(android.R.id.content)?.addView(virtualSurfaceView)
-                xLog("view size: ${HookUtils.getTopActivity()?.findViewById<ViewGroup>(R.id.content)?.childCount}")
-                HookUtils.getTopActivity()?.findViewById<ViewGroup>(android.R.id.content)?.getChildAt(0)?.bringToFront()
+                HookUtils.getContentView()?.addView(virtualSurfaceView)
+                HookUtils.getContentView()?.getChildAt(0)?.bringToFront()
                 virtualSurfaceView?.layoutParams = FrameLayout.LayoutParams(2, 2)
             }
             virtualSurfaceView?.visibility = View.VISIBLE
@@ -211,7 +212,7 @@ class VirtualCameraBiliSmile : IHook {
         isPreviewing = false
         if (virtualSurfaceView != null) {
             HookUtils.getTopActivity()?.runOnUiThread {
-                HookUtils.getTopActivity()?.findViewById<ViewGroup>(android.R.id.content)?.removeView(virtualSurfaceView)
+                HookUtils.getContentView()?.removeView(virtualSurfaceView)
             }
             virtualSurfaceView = null
         }
@@ -276,6 +277,16 @@ class VirtualCameraBiliSmile : IHook {
                     xLog("get bitmap failed")
                 }
             }, Handler(HookUtils.getTopActivity()?.mainLooper!!))
+        }
+    }
+
+    private fun dumpView(v: View?, depth: Int) {
+        v ?: return
+        xLog("${"  ".repeat(depth)}${v.javaClass.simpleName}")
+        if (v is ViewGroup) {
+            v.children.forEach {
+                dumpView(it, depth + 1)
+            }
         }
     }
 }
