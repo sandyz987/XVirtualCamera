@@ -5,6 +5,11 @@ import android.app.Application
 import android.app.Instrumentation
 import android.content.res.XModuleResources
 import android.content.res.XResources
+import com.sandyz.virtualcam.hooks.IHook
+import com.sandyz.virtualcam.hooks.VirtualCameraBiliSmile
+import com.sandyz.virtualcam.hooks.VirtualCameraDy
+import com.sandyz.virtualcam.utils.HookUtils
+import com.sandyz.virtualcam.utils.xLog
 import de.robv.android.xposed.IXposedHookInitPackageResources
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
