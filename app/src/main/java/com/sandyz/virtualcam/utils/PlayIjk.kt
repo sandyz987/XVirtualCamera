@@ -20,6 +20,7 @@ object PlayIjk {
      * ijkMP: 播放器
      */
     fun play(vSurface: Surface?, ijkMP: IjkMediaPlayer?) {
+        xLog("请求开始播放，virtualSurface: $vSurface, ijkMediaPlayer: $ijkMP")
         if (vSurface == null) {
             xLog("播放失败，virtualSurface为空！")
             toast(HookUtils.app, "播放失败！", Toast.LENGTH_SHORT)

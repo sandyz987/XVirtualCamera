@@ -1,8 +1,8 @@
 package com.sandyz.virtualcam.hooks
 
-import android.R
 import android.content.res.XModuleResources
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.Camera.PreviewCallback
@@ -22,6 +22,7 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
+import kotlin.math.min
 
 /**
  *@author sandyz987
@@ -82,7 +83,7 @@ class VirtualCameraBiliSmile : IHook {
             override fun beforeHookedMethod(param: MethodHookParam?) {
                 xLog("应用程序开始预览startPreview    topActivity:${HookUtils.getTopActivity()}")
                 startPreview()
-                dumpView(HookUtils.getContentView(), 0)
+                HookUtils.dumpView(HookUtils.getContentView(), 0)
             }
         })
 
@@ -108,7 +109,7 @@ class VirtualCameraBiliSmile : IHook {
                                 val byteArray = param.args?.get(0) as ByteArray
                                 // copy the yuvByteArray to byteArray
                                 yuvByteArray?.let {
-                                    System.arraycopy(it, 0, byteArray, 0, it.size)
+                                    System.arraycopy(it, 0, byteArray, 0, min(byteArray.size, it.size))
                                 }
                             }
                         }
@@ -152,7 +153,9 @@ class VirtualCameraBiliSmile : IHook {
                 virtualSurfaceView?.let {
                     getBitmapByView(it)
                 }
-                yuvByteArray = bitmap?.let { bitmapToYuv(it, width, height) }
+                bitmap = getRotateBitmap(bitmap, -90f, width, height)
+                xLog("rotatedbitmap:$bitmap, width:${bitmap?.width}, height:${bitmap?.height}")
+                yuvByteArray = bitmap?.let { bitmapToYuv((it), width, height) }
 
                 // 根据帧率计算休眠时间
                 xLog("复制Surface内容耗时: ${System.currentTimeMillis() - lastDrawTimestamp} bitmap:$bitmap, width:$width, height:$height")
@@ -160,8 +163,20 @@ class VirtualCameraBiliSmile : IHook {
                     Thread.sleep(lastDrawTimestamp + 1000L / fps.toLong() - System.currentTimeMillis())
             } catch (e: Exception) {
                 xLog("error:${e}")
+                e.printStackTrace()
             }
         }
+    }
+
+    private fun getRotateBitmap(bitmap: Bitmap?, rotateDegree: Float, width: Int, height: Int): Bitmap? {
+        bitmap ?: return null
+        val matrix = Matrix()
+        matrix.postRotate(rotateDegree)
+        matrix.postScale(width / height.toFloat(), height / width.toFloat())
+        return Bitmap.createBitmap(
+            bitmap, 0, 0, bitmap.width,
+            bitmap.height, matrix, false
+        )
     }
 
 
@@ -280,13 +295,4 @@ class VirtualCameraBiliSmile : IHook {
         }
     }
 
-    private fun dumpView(v: View?, depth: Int) {
-        v ?: return
-        xLog("${"  ".repeat(depth)}${v.javaClass.simpleName}")
-        if (v is ViewGroup) {
-            v.children.forEach {
-                dumpView(it, depth + 1)
-            }
-        }
-    }
 }

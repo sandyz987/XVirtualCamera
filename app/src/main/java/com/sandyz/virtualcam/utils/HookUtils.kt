@@ -6,6 +6,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.children
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
@@ -51,6 +52,16 @@ object HookUtils {
     fun getView(): View? = getTopActivity()?.window?.decorView
 
     fun getContentView(): ViewGroup? = getView()?.findViewById(android.R.id.content) as? ViewGroup
+
+    fun dumpView(v: View?, depth: Int) {
+        v ?: return
+        xLog("${"  ".repeat(depth)}${v.javaClass.name}")
+        if (v is ViewGroup) {
+            v.children.forEach {
+                dumpView(it, depth + 1)
+            }
+        }
+    }
 
     fun init(lpparam: XC_LoadPackage.LoadPackageParam) {
         val instrumentation = XposedHelpers.findClass(

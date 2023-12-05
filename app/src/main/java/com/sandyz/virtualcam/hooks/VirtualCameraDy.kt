@@ -8,9 +8,14 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.InputConfiguration
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
+import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Handler
 import android.view.Surface
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.children
+import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
 import de.robv.android.xposed.XC_MethodHook
@@ -31,6 +36,8 @@ class VirtualCameraDy : IHook {
         "com.android.camera",
         "com.ss.android.ugc.aweme",
         "tv.danmaku.bili",
+        "com.xunmeng.pinduoduo",
+        "com.tencent.mm",
         )
 
     override fun init(cl: ClassLoader?) {
@@ -152,6 +159,7 @@ class VirtualCameraDy : IHook {
                     // 所以记录这个surface，播放器播放的内容就往这里面输出就行
                     virtualSurface = param?.args?.get(0) as Surface?
                     resetIjkMediaPlayer()
+                    HookUtils.dumpView(HookUtils.getContentView(), 0)
                     PlayIjk.play(virtualSurface, ijkMediaPlayer)
                 }
                 // 把相机向应用程序输出的内容定向为虚无
@@ -209,6 +217,23 @@ class VirtualCameraDy : IHook {
             }
         })
     }
+//
+//    fun dumpView(v: View?, depth: Int) {
+//        v ?: return
+//        xLog("${"  ".repeat(depth)}${v.javaClass.name}")
+//        if (v.javaClass.simpleName == "SurfaceRenderView") {
+//            xLog("$v")
+//        }
+//        if (v is GLSurfaceView) {
+//            virtualSurface = v.holder.surface
+//            xLog("找到屏幕上的glsurface          surface: $virtualSurface")
+//        }
+//        if (v is ViewGroup) {
+//            v.children.forEach {
+//                dumpView(it, depth + 1)
+//            }
+//        }
+//    }
 
 
 }
