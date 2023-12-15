@@ -36,7 +36,6 @@ class VirtualCameraDy : IHook {
         "com.android.camera",
         "com.ss.android.ugc.aweme",
         "tv.danmaku.bili",
-        "com.xunmeng.pinduoduo",
         "com.tencent.mm",
         )
 

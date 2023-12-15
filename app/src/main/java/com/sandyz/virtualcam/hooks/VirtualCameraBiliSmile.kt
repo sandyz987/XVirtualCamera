@@ -9,18 +9,20 @@ import android.hardware.Camera.PreviewCallback
 import android.os.Build
 import android.os.Handler
 import android.view.PixelCopy
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.core.view.children
 import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 import kotlin.math.min
 
@@ -31,7 +33,7 @@ import kotlin.math.min
  */
 
 class VirtualCameraBiliSmile : IHook {
-    override fun getName(): String = "b站、快手、微信视频号能用的虚拟摄像头"
+    override fun getName(): String = "b站、快手能用的虚拟摄像头"
     override fun getSupportedPackages() = listOf(
         "tv.danmaku.bili",
         "com.smile.gifmaker",
@@ -61,27 +63,20 @@ class VirtualCameraBiliSmile : IHook {
     private var height = 0
 
     @Volatile
-    private var isPreviewing = false
-
-    @Volatile
     private var yuvByteArray: ByteArray? = null
+
+    private var drawJob: Job? = null
 
     private var bitmap: Bitmap? = null
 
     private var ijkMediaPlayer: IjkMediaPlayer? = null
 
     override fun hook(lpparam: LoadPackageParam?) {
-        XposedHelpers.findAndHookMethod("android.hardware.Camera",
-            lpparam?.classLoader, "setPreviewTexture", SurfaceTexture::class.java, object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam?) {
-                    xLog("setPreviewTexture             package:${lpparam?.packageName}          process:${lpparam?.processName}          surface:${param?.args?.get(0)}")
-
-                }
-            })
 
         XposedHelpers.findAndHookMethod("android.hardware.Camera", lpparam?.classLoader, "startPreview", object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam?) {
                 xLog("应用程序开始预览startPreview    topActivity:${HookUtils.getTopActivity()}")
+                stopPreview()
                 startPreview()
                 HookUtils.dumpView(HookUtils.getContentView(), 0)
             }
@@ -100,7 +95,7 @@ class VirtualCameraBiliSmile : IHook {
                     previewCallbackClazz = param.args[0].javaClass
                     XposedHelpers.findAndHookMethod(previewCallbackClazz, "onPreviewFrame", ByteArray::class.java, Camera::class.java, object : XC_MethodHook() {
                         override fun beforeHookedMethod(param: MethodHookParam?) {
-                            if (!isPreviewing) return
+                            if (drawJob?.isActive != true) return
                             camera = param?.args?.get(1) as Camera
                             width = camera?.parameters?.previewSize?.width ?: 0
                             height = camera?.parameters?.previewSize?.height ?: 0
@@ -138,11 +133,11 @@ class VirtualCameraBiliSmile : IHook {
         })
     }
 
-    private val drawerRunnable = Runnable {
-        while (isPreviewing) {
+    private suspend fun drawer() {
+        while (true) {
             try {
                 if (width == 0 || height == 0) {
-                    Thread.sleep(1000L / fps.toLong())
+                    delay(1000L / fps.toLong())
                     continue
                 }
                 lastDrawTimestamp = System.currentTimeMillis()
@@ -160,13 +155,15 @@ class VirtualCameraBiliSmile : IHook {
                 // 根据帧率计算休眠时间
                 xLog("复制Surface内容耗时: ${System.currentTimeMillis() - lastDrawTimestamp} bitmap:$bitmap, width:$width, height:$height")
                 if (System.currentTimeMillis() < lastDrawTimestamp + 1000L / fps.toLong())
-                    Thread.sleep(lastDrawTimestamp + 1000L / fps.toLong() - System.currentTimeMillis())
-            } catch (e: Exception) {
-                xLog("error:${e}")
+                    delay(lastDrawTimestamp + 1000L / fps.toLong() - System.currentTimeMillis())
+            } catch (e: IllegalArgumentException) {
+                xLog("exception:${e}")
                 e.printStackTrace()
+                stopPreview()
             }
         }
     }
+
 
     private fun getRotateBitmap(bitmap: Bitmap?, rotateDegree: Float, width: Int, height: Int): Bitmap? {
         bitmap ?: return null
@@ -191,12 +188,14 @@ class VirtualCameraBiliSmile : IHook {
     }
 
     private fun startPreview() {
-        xLog("开启预览线程")
-        isPreviewing = true
-        Thread(drawerRunnable).start()
+        xLog("开启预览线程1")
+        drawJob = HookUtils.coroutineScope().launch {
+            drawer()
+        }
         if (virtualSurfaceView == null) {
             virtualSurfaceView = SurfaceView(HookUtils.getTopActivity())
             HookUtils.getTopActivity()?.runOnUiThread {
+                virtualSurfaceView ?: return@runOnUiThread
                 HookUtils.getContentView()?.addView(virtualSurfaceView)
                 HookUtils.getContentView()?.getChildAt(0)?.bringToFront()
                 virtualSurfaceView?.layoutParams = FrameLayout.LayoutParams(2, 2)
@@ -223,8 +222,8 @@ class VirtualCameraBiliSmile : IHook {
     }
 
     private fun stopPreview() {
+        drawJob?.cancel()
         resetIjkMediaPlayer()
-        isPreviewing = false
         if (virtualSurfaceView != null) {
             HookUtils.getTopActivity()?.runOnUiThread {
                 HookUtils.getContentView()?.removeView(virtualSurfaceView)

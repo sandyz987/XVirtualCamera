@@ -7,11 +7,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.children
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import com.sandyz.virtualcam.hooks.IHook
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import java.lang.ref.WeakReference
+import kotlin.coroutines.CoroutineContext
 
 
 /**
@@ -46,6 +57,66 @@ object HookUtils {
             null
         } else {
             activities[0]
+        }
+    }
+
+    fun getLifecycle(): Lifecycle? {
+        // 反射获取lifecycle提高成功率
+        val activity = getTopActivity()
+        mutableListOf(
+            "androidx.lifecycle.LifecycleOwner",
+            "android.arch.lifecycle.LifecycleOwner",
+            "android.support.v4.app.FragmentActivity",
+            "android.support.v4.app.SupportActivity",
+            "androidx.fragment.app.FragmentActivity",
+            "androidx.appcompat.app.AppCompatActivity",
+            "androidx.activity.ComponentActivity",
+            "androidx.core.app.ComponentActivity",
+        ).forEach {
+            try {
+                val clazz = try {
+                    XposedHelpers.findClass(it, activity?.classLoader)
+                } catch (t: Throwable) {
+                    Class.forName(it)
+                }
+                val activityCast = clazz?.cast(activity)
+                val function = clazz?.getDeclaredMethod("getLifecycle")
+                function?.isAccessible = true
+                val lifecycle = function?.invoke(activityCast) as? Lifecycle
+                if (lifecycle != null) {
+                    return lifecycle
+                } else {
+                    xLog("lifecycle is null")
+                }
+            } catch (t: Throwable) {
+                xLog(t.toString())
+            }
+        }
+        return null
+    }
+
+
+    private val coroutineScopeMap = HashMap<Activity, CoroutineScope>()
+
+    fun coroutineScope(): CoroutineScope = if (coroutineScopeMap[getTopActivity()] != null) {
+        coroutineScopeMap[getTopActivity()]!!
+    } else {
+        MyCoroutineScope().also {
+            xLog("activity: ${getTopActivity()}")
+            xLog("lifecycle2: ${getLifecycle()}")
+            val activity = getTopActivity()?: return@also
+            val activityLifecycle = getLifecycle()?: return@also
+            val lifecycleEventObserver = object :LifecycleEventObserver {
+                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                    if (event == Lifecycle.Event.ON_DESTROY) {
+                        it.cancel()
+                        activityLifecycle.removeObserver(this)
+                        coroutineScopeMap.remove(activity)
+                    }
+                }
+            }
+            activityLifecycle.addObserver(lifecycleEventObserver)
+            coroutineScopeMap[activity] = it
         }
     }
 
@@ -86,6 +157,10 @@ object HookUtils {
         })
     }
 
+}
+
+fun IHook.xLog(msg: String?) {
+    XposedBridge.log("[${this::class.java.simpleName} ${Thread.currentThread().id}] $msg")
 }
 
 fun xLog(msg: String?) {
@@ -130,4 +205,14 @@ fun toast(context: Context?, text: CharSequence, duration: Int) {
     } catch (e: Throwable) {
         xLog("toast: $text")
     }
+}
+
+class MyCoroutineScope: CoroutineScope {
+    private val job = Job()
+    override val coroutineContext: CoroutineContext = Dispatchers.IO +
+            job +
+            CoroutineName("MyCoroutineScope") +
+            CoroutineExceptionHandler{ coroutineContext, throwable ->
+                xLog("coroutineException in $coroutineContext: $throwable")
+            }
 }
