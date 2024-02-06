@@ -30,7 +30,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage
 class HookMain : IXposedHookLoadPackage, IXposedHookZygoteInit, IXposedHookInitPackageResources {
 
     companion object {
-        private var modulePath: String? = null
+        public var modulePath: String? = null
         private var moduleRes: String? = null
         var xResources: XResources? = null
 
@@ -41,12 +41,17 @@ class HookMain : IXposedHookLoadPackage, IXposedHookZygoteInit, IXposedHookInitP
                 "$modulePath/lib/arm64-v8a/libijkffmpeg.so",
                 "$modulePath/lib/arm64-v8a/libijksdl.so",
                 "$modulePath/lib/arm64-v8a/libijkplayer.so",
+                "$modulePath/lib/arm64-v8a/libencoder.so",
+
                 "$modulePath/lib/armeabi-v7a/libijkffmpeg.so",
                 "$modulePath/lib/armeabi-v7a/libijksdl.so",
                 "$modulePath/lib/armeabi-v7a/libijkplayer.so",
+                "$modulePath/lib/armeabi-v7a/libencoder.so",
+
                 "$modulePath/lib/arm64/libijkffmpeg.so",
                 "$modulePath/lib/arm64/libijksdl.so",
                 "$modulePath/lib/arm64/libijkplayer.so",
+                "$modulePath/lib/arm64/libencoder.so",
             )
             libs.forEach {
                 try {

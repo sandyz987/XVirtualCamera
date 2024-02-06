@@ -31,6 +31,17 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+    externalNativeBuild {
+        ndkBuild {
+            path file('src/main/jni/Android.mk')
+        }
+    }
+    sourceSets.main{
+        jni.srcDirs = ['src/main/jni']
+        jniLibs.srcDirs = ['libs']
+    }
+
 }
 
 dependencies {

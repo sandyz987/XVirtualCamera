@@ -2,6 +2,7 @@ package com.sandyz.virtualcam.hooks
 
 import android.content.res.XModuleResources
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
@@ -14,6 +15,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.widget.FrameLayout
+import com.sandyz.virtualcam.jni.EncoderJNI
 import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
@@ -251,9 +253,10 @@ class VirtualCameraPdd : IHook {
     private fun bitmapToYuv(bitmap: Bitmap, width: Int, height: Int): ByteArray {
         val intArray = IntArray(width * height)
         bitmap.getPixels(intArray, 0, width, 0, 0, width, height)
-        val yuvByteArray = ByteArray(width * height * 3 / 2)
-        encodeYUV420SP(yuvByteArray, intArray, width, height)
-        return yuvByteArray
+//        val yuvByteArray = ByteArray(width * height * 3 / 2)
+//        encodeYUV420SP(yuvByteArray, intArray, width, height)
+        return EncoderJNI.encodeYUV420SP(intArray, width, height)
+
     }
 
     // https://stackoverflow.com/questions/5960247/convert-bitmap-array-to-yuv-ycbcr-nv21

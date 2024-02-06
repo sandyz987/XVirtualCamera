@@ -14,6 +14,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.widget.FrameLayout
+import com.sandyz.virtualcam.jni.EncoderJNI
 import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
@@ -235,8 +236,10 @@ class VirtualCameraBiliSmile : IHook {
     private fun bitmapToYuv(bitmap: Bitmap, width: Int, height: Int): ByteArray {
         val intArray = IntArray(width * height)
         bitmap.getPixels(intArray, 0, width, 0, 0, width, height)
-        val yuvByteArray = ByteArray(width * height * 3 / 2)
-        encodeYUV420SP(yuvByteArray, intArray, width, height)
+//        val yuvByteArray = ByteArray(width * height * 3 / 2)
+//        encodeYUV420SP(yuvByteArray, intArray, width, height)
+        val yuvByteArray = EncoderJNI.encodeYUV420SP(intArray, width, height)
+        if (yuvByteArray == null) xLog("为空")
         return yuvByteArray
     }
 
