@@ -2,15 +2,21 @@ package com.sandyz.virtualcam.hooks
 
 import android.content.res.XModuleResources
 import android.graphics.SurfaceTexture
+import android.hardware.Camera
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.InputConfiguration
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
+import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Handler
 import android.view.Surface
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.children
+import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.PlayIjk
 import com.sandyz.virtualcam.utils.xLog
 import de.robv.android.xposed.XC_MethodHook
@@ -25,13 +31,10 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
  *@description 抖音和小米相机可用的虚拟摄像头模块
  */
 
-class VirtualCameraDy : IHook {
-    override fun getName(): String = "抖音和小米相机可用的虚拟摄像头模块"
+class VirtualCameraWs : IHook {
+    override fun getName(): String = "WhatsApp可用的虚拟摄像头模块"
     override fun getSupportedPackages() = listOf(
-        "com.android.camera",
-        "com.ss.android.ugc.aweme",
-        "tv.danmaku.bili",
-        "com.tencent.mm",
+        "com.whatsapp",
         )
 
     override fun init(cl: ClassLoader?) {
@@ -86,70 +89,32 @@ class VirtualCameraDy : IHook {
 
         // 标准库，要android9以上，根据系统不同可能走的createCaptureSession不同
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl", lpparam.classLoader, "createCaptureSession", SessionConfiguration::class.java, object : XC_MethodHook() {
+            XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl", lpparam.classLoader, "createCaptureSession", List::class.java, CameraCaptureSession.StateCallback::class.java, Handler::class.java, object : XC_MethodHook() {
                 override fun beforeHookedMethod(param: MethodHookParam) {
-                    resetSurface()
+                    xLog("whatsapp hook createCaptureSession")
 
-                    xLog("应用程序创建相机管道?createCaptureSession   ")
-                    val sessionConfiguration = param.args[0] as SessionConfiguration
+                    val surfaceList = param.args[0] as List<Surface>
 
-                    val surfaces = mutableListOf<Surface?>()
-                    sessionConfiguration.outputConfigurations.forEach {
-                        surfaces.add(it.surface)
-                    }
-                    xLog("应用程序想要添加surfaces: $surfaces，拦截后只添加：$nullSurface")
+                    xLog("whatsapp hook createCaptureSession应用程序创建相机管道?   ")
 
-                    val outputConfiguration = nullSurface?.let { OutputConfiguration(it) }
-                    val mySessionConfiguration =
-                        SessionConfiguration(
-                            sessionConfiguration.sessionType,
-                            listOf(outputConfiguration),
-                            sessionConfiguration.executor,
-                            sessionConfiguration.stateCallback
-                        )
-                    param.args[0] = mySessionConfiguration
+                    val newSurface = mutableListOf<Surface?>().apply { add(nullSurface) }
 
-                    hookSessionStateCallback(sessionConfiguration.stateCallback.javaClass)
+                    xLog("应用程序想要添加surfaces: $surfaceList，拦截后只添加：$nullSurface")
+                    param.args[0] = newSurface
+
+//                    hookSessionStateCallback(sessionConfiguration.stateCallback.javaClass)
 
                 }
             })
         }
 
-        // 适配oppo createCaptureSession，可删除
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            try {
-                XposedHelpers.findAndHookMethod(
-                    "com.color.compat.hardware.camera2.CameraDevicesNative", lpparam.classLoader, "createCustomCaptureSession",
-                    CameraDevice::class.java,
-                    InputConfiguration::class.java,
-                    List::class.java,
-                    Int::class.javaPrimitiveType,
-                    CameraCaptureSession.StateCallback::class.java,
-                    Handler::class.java, object : XC_MethodHook() {
-                        override fun beforeHookedMethod(param: MethodHookParam?) {
-                            xLog("oppo应用程序创建相机管道?createCaptureSession   ")
-                            val surfaces = mutableListOf<Surface?>()
-                            (param?.args?.get(2) as List<*>).forEach {
-                                if (it is Surface) {
-                                    surfaces.add(it)
-                                }
-                            }
-                            xLog("oppo应用程序想要添加surfaces: $surfaces，拦截后只添加：$nullSurface")
-                            param.args[2] = listOf(nullSurface?.let { OutputConfiguration(it) })
-
-                            hookSessionStateCallback(param.args[4].javaClass)
-                        }
-                    })
-            } catch (e: Throwable) {
-                xLog("oppo没有找到自定义方法createCustomCaptureSession")
-            }
-        }
 
         XposedHelpers.findAndHookMethod("android.hardware.camera2.CaptureRequest.Builder", lpparam.classLoader, "addTarget", Surface::class.java, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam?) {
                 xLog("应用程序向相机添加输出目标addTarget          surface: ${param?.args?.get(0)}")
                 xLog("找到屏幕上的surface          surface: ${param?.args?.get(0)}")
                 if (virtualSurface == null) { // 如果还不知道屏幕上的surface是哪个的话，说明还没有hook到相机
+                    resetSurface()
                     // 应用向相机添加输出目标，说明这个surface就是屏幕上显示的那个view
                     // 所以记录这个surface，播放器播放的内容就往这里面输出就行
                     virtualSurface = param?.args?.get(0) as Surface?
@@ -190,45 +155,7 @@ class VirtualCameraDy : IHook {
 
     }
 
-    /**
-     * todo: 可以删除，这段代码用于调试时观察管道是否创建成功
-     */
-    private fun hookSessionStateCallback(clazz: Class<*>) {
-        if (sessionStateCallbackClazz != null) {
-            xLog("已经hook过，不再hook")
-            return
-        }
-        sessionStateCallbackClazz = clazz
 
-        XposedHelpers.findAndHookMethod(sessionStateCallbackClazz, "onConfigured", CameraCaptureSession::class.java, object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                xLog("相机管道创建完毕onConfigured             ")
-            }
-        })
-
-        XposedHelpers.findAndHookMethod(sessionStateCallbackClazz, "onConfigureFailed", CameraCaptureSession::class.java, object : XC_MethodHook() {
-            override fun beforeHookedMethod(param: MethodHookParam) {
-                xLog("相机管道创建失败onConfigureFailed             ")
-            }
-        })
-    }
-//
-//    fun dumpView(v: View?, depth: Int) {
-//        v ?: return
-//        xLog("${"  ".repeat(depth)}${v.javaClass.name}")
-//        if (v.javaClass.simpleName == "SurfaceRenderView") {
-//            xLog("$v")
-//        }
-//        if (v is GLSurfaceView) {
-//            virtualSurface = v.holder.surface
-//            xLog("找到屏幕上的glsurface          surface: $virtualSurface")
-//        }
-//        if (v is ViewGroup) {
-//            v.children.forEach {
-//                dumpView(it, depth + 1)
-//            }
-//        }
-//    }
 
 
 }

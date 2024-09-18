@@ -9,6 +9,7 @@ import com.sandyz.virtualcam.hooks.IHook
 import com.sandyz.virtualcam.hooks.VirtualCameraBiliSmile
 import com.sandyz.virtualcam.hooks.VirtualCameraDy
 import com.sandyz.virtualcam.hooks.VirtualCameraPdd
+import com.sandyz.virtualcam.hooks.VirtualCameraWs
 import com.sandyz.virtualcam.utils.HookUtils
 import com.sandyz.virtualcam.utils.xLog
 import de.robv.android.xposed.IXposedHookInitPackageResources
@@ -67,6 +68,7 @@ class HookMain : IXposedHookLoadPackage, IXposedHookZygoteInit, IXposedHookInitP
         VirtualCameraBiliSmile(),
         VirtualCameraDy(),
         VirtualCameraPdd(),
+        VirtualCameraWs(),
     )
 
 

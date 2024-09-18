@@ -39,6 +39,7 @@ class VirtualCameraBiliSmile : IHook {
         "tv.danmaku.bili",
         "com.smile.gifmaker",
         "com.tencent.mm",
+        "com.tencent.mobileqq",
     )
 
     override fun init(cl: ClassLoader?) {
@@ -190,6 +191,9 @@ class VirtualCameraBiliSmile : IHook {
 
     private fun startPreview() {
         xLog("开启预览线程1")
+        if (drawJob?.isActive == true) {
+            drawJob?.cancel()
+        }
         drawJob = HookUtils.coroutineScope().launch {
             drawer()
         }

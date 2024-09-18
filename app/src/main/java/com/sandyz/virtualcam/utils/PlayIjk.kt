@@ -43,13 +43,16 @@ object PlayIjk {
             }
         } catch (e: Exception) {
             toast(HookUtils.app, "读取失败！", Toast.LENGTH_SHORT)
+            xLog("读取失败！")
         }
         if (urlStr.isBlank()) {
             urlStr = HookUtils.app?.externalCacheDir?.path?.toString() + "/virtual.mp4"
             if (File(urlStr).exists()) {
                 toast(HookUtils.app, "播放本地视频：$urlStr", Toast.LENGTH_LONG)
+                xLog("播放本地视频：$urlStr")
             } else {
                 toast(HookUtils.app, "请前往${filePath}输入视频地址！或者查看插件使用说明！", Toast.LENGTH_LONG)
+                xLog("请前往${filePath}输入视频地址！或者查看插件使用说明！")
                 return
             }
         } else {
@@ -65,6 +68,7 @@ object PlayIjk {
             }
         }
         toast(HookUtils.app, "开始播放，ijk:$ijkMP，surface:$vSurface url:$urlStr", Toast.LENGTH_SHORT)
+        xLog("开始播放，ijk:$ijkMP，surface:$vSurface url:$urlStr")
         xLog("currentActivity: ${HookUtils.getActivities()}, currentTopActivity: ${HookUtils.getTopActivity()}")
     }
 }
