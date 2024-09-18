@@ -27,7 +27,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
 
 /**
  *@author sandyz987
- *@date 2023/11/18
+ *@date 2024/9/18
  *@description 抖音和小米相机可用的虚拟摄像头模块
  */
 
