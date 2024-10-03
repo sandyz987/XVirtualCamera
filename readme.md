@@ -3,6 +3,7 @@
 A virtual camera module based on the Xposed framework suitable for Android 9.0 and above, written in Kotlin.
 
 适用于Android9.0以上的、基于Xposed框架的**虚拟摄像头**插件。插件由Kotlin编写。
+支持替换虚拟摄像头内容为“直播推流“，支持的协议有：http、rtsp、rtmp、rtp等。
 
 **使用本开源项目产生的一切后果请自行承担。**
 
