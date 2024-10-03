@@ -37,8 +37,10 @@ A virtual camera module based on the Xposed framework suitable for Android 9.0 a
 - 2、请在`/storage/emulated/0/Android/data/[你要使用虚拟摄像头的应用包名例如]/cache/stream.txt`中编辑网络视频的地址，注意不要有多的空行。
 - 3、当`stream.txt`不存在或内容为空时，使用`/storage/emulated/0/Android/data/[包名]/cache/virtual.mp4`作为虚拟摄像头的视频源。
 
-网络视频支持http、https、rtsp等流媒体协议，本地视频支持mp4等视频格式。具体请参考[bilibili/ijkplayer](https://github.com/bilibili/ijkplayer)支持的协议，因为本项目基于它开发。
+网络视频支持http、rtsp、rtmp、rtp等流媒体协议，本地视频支持mp4等视频格式。
 
+**使用推流建议解决方案：** OBS直播推流 + Nginx反向代理（具体教程请搜索关键词“利用obs和nginx搭建直播流服务”），
+   然后在stream.txt中填写：rtmp://局域网地址:端口号/名称（例如：rtmp://172.20.10.6:1935/live）。延迟大概在2～3秒。
 
 
 ## 免责声明
