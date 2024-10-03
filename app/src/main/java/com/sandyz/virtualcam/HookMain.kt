@@ -53,6 +53,17 @@ class HookMain : IXposedHookLoadPackage, IXposedHookZygoteInit, IXposedHookInitP
                 "$modulePath/lib/arm64/libijksdl.so",
                 "$modulePath/lib/arm64/libijkplayer.so",
                 "$modulePath/lib/arm64/libencoder.so",
+
+                "$modulePath/lib/x86/libijkffmpeg.so",
+                "$modulePath/lib/x86/libijksdl.so",
+                "$modulePath/lib/x86/libijkplayer.so",
+                "$modulePath/lib/x86/libencoder.so",
+
+                "$modulePath/lib/x86_64/libijkffmpeg.so",
+                "$modulePath/lib/x86_64/libijksdl.so",
+                "$modulePath/lib/x86_64/libijkplayer.so",
+                "$modulePath/lib/x86_64/libencoder.so",
+
             )
             libs.forEach {
                 try {
