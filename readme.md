@@ -1,4 +1,5 @@
 # XVirtualCamera（Xposed虚拟摄像头插件）
+[English Version Readme](https://github.com/sandyz987/XVirtualCamera/blob/master/readme_en.md)
 
 A virtual camera module based on the Xposed framework suitable for Android 9.0 and above, written in Kotlin.
 
